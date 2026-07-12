@@ -170,13 +170,8 @@ void CStream::SendStream(CPlayer* player)
 	StartWrite();
 }
 
-<<<<<<< Updated upstream
-void CStream::LoadInput(const void* data, size_t size) {
-	// Reset the previous state immediately before validating
-=======
 void CStream::LoadInput(const void* data, size_t size)
 {
->>>>>>> Stashed changes
 	inputStreamSize = 0;
 	inputStreamPosition = 0;
 	inputStreamError = true;
