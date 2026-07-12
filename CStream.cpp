@@ -105,7 +105,6 @@ void CStream::SendStream(CPlayer* player) {
 	outputStreamError = false;
 }
 
-// ANTI-CLUMSY PROTECTED LOADINPUT
 void CStream::LoadInput(const void* data, size_t size) {
 	// Reset the previous state immediately before validating
 	inputStreamSize = 0;
