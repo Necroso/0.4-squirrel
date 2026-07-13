@@ -20,6 +20,7 @@
 #include "VCMP.h"
 
 #define ANSI_RESET      "\x1b[0m"
+#define ANSI_RED        "\x1b[1;31m"
 #define ANSI_BOLD       "\x1b[1m"
 #define ANSI_YELLOW     "\x1b[1;33m"
 #define ANSI_CYAN       "\x1b[1;36m"
@@ -76,9 +77,11 @@ void ExecuteCallback(const SQChar* callbackName, Args... args) {
 uint8_t OnInitServer()
 {
 	printf("\n");
-	OutputMessage("SqVCMP v1.1 (" ANSI_BOLD ANSI_YELLOW "Release 0.4.7" ANSI_RESET ")");
-	OutputMessage("Updated by: " ANSI_CYAN "[LBR]Necroso" ANSI_RESET " | Original Dev: " ANSI_MAGENTA "Stormeus" ANSI_RESET);
-	OutputMessage("Features/Changelog: " ANSI_CYAN "https://forum.vc-mp.org/index.php?topic=9438.0" ANSI_RESET);
+	OutputMessage("--------------------------------------------------------------------");
+	OutputMessage("* SqVCMP v1.1 (" ANSI_BOLD ANSI_YELLOW "Release 0.4.7" ANSI_RESET ")");
+	OutputMessage("* Updated by: " ANSI_RED "[LBR]Necroso" ANSI_RESET " | Original Dev: " ANSI_MAGENTA "Stormeus" ANSI_RESET);
+	OutputMessage("* Features/Changelog: " ANSI_CYAN "https://forum.vc-mp.org/index.php?topic=9438.0" ANSI_RESET);
+	OutputMessage("* Source: " ANSI_CYAN "https://github.com/Necroso/0.4-squirrel" ANSI_RESET);
 
 	pCore->LoadVM();
 
@@ -97,18 +100,18 @@ void OnFrame(float fElapsedTime)
 	{
 		gServerInitPending = false;
 
-		OutputMessage("--------------------------------------------------");
-		OutputMessage("   SqVCMP: Gamemode initialization started...");
+		OutputMessage("--------------------------------------------------------------------");
+		OutputMessage("   |----- SqVCMP: Gamemode initialization started");
 
 		pCore->LoadScript();
+
 		pCore->ChangeReloadPermission(false);
 
 		ExecuteCallback(_SC("onServerStart"));
 
 		pCore->ChangeReloadPermission(true);
 
-		OutputMessage("   Gamemode successfully loaded and ready.");
-		OutputMessage("--------------------------------------------------");
+		
 	}
 
 	pCore->ProcessTimers(fElapsedTime);

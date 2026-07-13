@@ -198,7 +198,7 @@ void CCore::LoadScript()
 	FILE* file = fopen("server.cfg", "r");
 	if (file == nullptr)
 	{
-		OutputError("SqVCMP could not read server.cfg");
+		OutputError("   |----- SqVCMP could not read server.cfg");
 		this->canReload = true;
 		return;
 	}
@@ -226,7 +226,7 @@ void CCore::LoadScript()
 	this->canReload = true;
 
 	if (!scriptFound) {
-		OutputError("No Squirrel gamemode was specified.");
+		OutputError("   |----- No Squirrel gamemode was specified.");
 	}
 }
 
@@ -250,18 +250,19 @@ bool CCore::ParseConfigLine(char* lineBuffer)
 		return false;
 
 	char debugBuf[512];
-	snprintf(debugBuf, sizeof(debugBuf), "   Loading script: '%s'", gamemodeSearch);
+	snprintf(debugBuf, sizeof(debugBuf), "   |----- Loading script: '%s'", gamemodeSearch);
 	OutputMessage(debugBuf);
 
 	FILE* testFile = fopen(gamemodeSearch, "rb");
 	if (testFile)
 	{
-		OutputMessage("   File detected and ready for reading.");
+		OutputMessage("   |----- File detected and ready for reading.");
+		OutputMessage("--------------------------------------------------------------------\n\n");
 		fclose(testFile);
 	}
 	else
 	{
-		snprintf(debugBuf, sizeof(debugBuf), "Failed to open '%s': The file does not exist or is locked.", gamemodeSearch);
+		snprintf(debugBuf, sizeof(debugBuf), "   |----- Failed to open '%s': The file does not exist or is locked.", gamemodeSearch);
 		OutputError(debugBuf);
 	}
 
@@ -275,7 +276,7 @@ bool CCore::ParseConfigLine(char* lineBuffer)
 	catch (Sqrat::Exception& e)
 	{
 		char buf[256];
-		snprintf(buf, sizeof(buf), "Could not load script '%s'", gamemodeSearch);
+		snprintf(buf, sizeof(buf), "   |----- Could not load script '%s'", gamemodeSearch);
 
 		OutputWarning(buf);
 		OutputWarning(e.Message().c_str());
@@ -295,7 +296,7 @@ bool CCore::ParseConfigLine(char* lineBuffer)
 	}
 	catch (Sqrat::Exception&)
 	{
-		OutputWarning("onScriptLoad failed to execute -- check the console for more details.");
+		OutputWarning("   |----- onScriptLoad failed to execute -- check the console for more details.");
 	}
 
 	return true;

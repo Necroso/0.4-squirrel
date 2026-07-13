@@ -278,7 +278,6 @@ void CPlayer::SetCameraPos(Vector pos, Vector look, int interpTimeMS) {
 	functions->SetCameraPosition(this->nPlayerId, pos.x, pos.y, pos.z, look.x, look.y, look.z);
 }
 // NEW FEATURES 0.4.7 ======================================================================================================
-
 void CPlayer::Set3DArrowForPlayer(CPlayer* target, bool enable) {
 	functions->SetPlayer3DArrowForPlayer(this->nPlayerId, target->nPlayerId, enable);
 }
@@ -286,7 +285,7 @@ void CPlayer::Set3DArrowForPlayer(CPlayer* target, bool enable) {
 bool CPlayer::Get3DArrowForPlayer(CPlayer* target) {
 	return functions->GetPlayer3DArrowForPlayer(this->nPlayerId, target->nPlayerId) == 1;
 }
-
+// ========================================================================================================================
 void CPlayer::Disarm() { functions->RemoveAllWeapons(this->nPlayerId); }
 void CPlayer::CompatAnimation(int anim) { functions->SetPlayerAnimation(this->nPlayerId, 0, anim); }
 void CPlayer::Animation(int group, int anim) { functions->SetPlayerAnimation(this->nPlayerId, group, anim); }

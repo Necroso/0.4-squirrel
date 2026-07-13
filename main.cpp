@@ -210,5 +210,9 @@ extern "C" EXPORT unsigned int VcmpPluginInit(PluginFuncs* givenPluginFuncs, Plu
     callbacks->OnCheckpointExited = OnCheckpointExited;
     callbacks->OnPlayerModuleList = OnPlayerModuleList;
 
+    #ifdef _WIN32
+        system("chcp 65001 > nul");
+    #endif
+
     return 1;
 }

@@ -10,6 +10,8 @@
 #include "CVehicle.h"
 #include "CCheckpoint.h"
 
+#include <sqrat.h>
+
 #pragma once
 
 // Yet another fugly list.
@@ -165,6 +167,7 @@ CCheckpoint * FindCheckpoint(int id);
 
 void SetWorldBounds   ( float maxX, float minX, float maxY, float minY );
 Bounds GetWorldBounds ( void );
+int ClearWorldObjects ( int world );
 
 void SetWastedSettings           ( int deathTime, int fadeTime, float fadeInSpeed, float fadeOutSpeed, cRGB colour, int corpseFadeDelay, int corpseFadeTime );
 WastedSettings GetWastedSettings ( void );
@@ -181,6 +184,8 @@ void SetHandlingRule         ( int model, int rule, float value );
 double GetHandlingRule       ( int model, int rule );
 void ResetHandlingRule       ( int model, int rule );
 void ResetVehicleHandling    ( int model );
+void SetVehicle3DArrowEnabled( Sqrat::Object vehicle, bool enabled );
+bool GetVehicle3DArrowEnabled( Sqrat::Object vehicle );
 
 bool SetWeaponDataValue   ( int weaponID, int fieldID, double value );
 double GetWeaponDataValue ( int weaponID, int fieldID );
@@ -208,12 +213,15 @@ void MessageAllExcept   ( const SQChar * message, CPlayer * player );
 void PrivMessage        ( CPlayer * player, const SQChar * message );
 void PrivMessageAll     ( const SQChar * message );
 void SendPlayerMessage  ( CPlayer * playerToFake, CPlayer * playerTo, const SQChar * message );
+void SetPlayer3DArrowEnabled( Sqrat::Object player, bool enabled );
+bool GetPlayer3DArrowEnabled( Sqrat::Object player );
+Sqrat::Table GetNearbyEntities(Sqrat::Object player, float radius);
 
-const SQChar * GetWeaponName   ( int weaponID );
-const SQChar * GetDistrictName ( float x, float y );
-const SQChar * GetSkinName     ( int skinID );
-int      GetWeaponID     ( const SQChar * name );
-DWORD    SQGetTickCount  ( void );
+const SQChar * GetWeaponName    ( int weaponID );
+const SQChar * GetDistrictName  ( float x, float y );
+const SQChar * GetSkinName      ( int skinID );
+int GetWeaponID                 ( const SQChar * name );
+DWORD SQGetTickCount            ( void );
 
 float DistanceFromPoint ( float x1, float y1, float x2, float y2 );
 void ReloadScripts      ( void );
@@ -226,6 +234,7 @@ bool IsNum(const SQChar * line);
 int GetVehicleCount(void);
 int GetPickupCount(void);
 int GetObjectCount(void);
+int GetCheckpointCount(void);
 int GetPlayers(void);
 
 void SetVehiclesForcedRespawnHeight(SQFloat height);
@@ -234,13 +243,15 @@ SQFloat GetVehiclesForcedRespawnHeight(void);
 SQInteger FindPlayer( HSQUIRRELVM v );
 SQInteger InPoly( HSQUIRRELVM v );
 SQInteger NewTimer( HSQUIRRELVM v );
+std::string FormatDecimal(const SQChar* amountStr);
+std::string ReplaceChars(const SQChar* original, Sqrat::Object target, const SQChar* newChar);
 
 // These functions are for compatibility, but will be deprecated
 SQInteger SetAmmuWeapon(HSQUIRRELVM v);
 SQInteger IsAmmuWeaponEnabled(HSQUIRRELVM v);
 SQInteger SetAmmuWeaponEnabled(HSQUIRRELVM v);
 
-DWORD    GetTime         ( void );
+DWORD GetTime ( void );
 const SQChar * GetFullTime(void);
 
 bool GetFallEnabled(void);

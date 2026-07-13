@@ -264,8 +264,8 @@ void PlayGameSoundExpanded( int world, int sound, float x, float y, float z )
 	PlayGameSound( world, sound, &pos );
 }
 
-void SetUseClasses ( bool toUse )                         { functions->SetServerOption( vcmpServerOptionUseClasses, toUse ); }
-bool UsingClasses  ()                                     { return ( functions->GetServerOption( vcmpServerOptionUseClasses ) != 0 ); }
+void SetUseClasses ( bool toUse ) { functions->SetServerOption( vcmpServerOptionUseClasses, toUse ); }
+bool UsingClasses  () { return ( functions->GetServerOption( vcmpServerOptionUseClasses ) != 0 ); }
 
 void AddClass( int team, cRGB * colour, int skin, Vector * spawnPos, float spawnAngle, int wep1, int ammo1, int wep2, int ammo2, int wep3, int ammo3 )
 {
@@ -420,6 +420,27 @@ Bounds GetWorldBounds()
 	return Bounds( maxX, minX, maxY, minY );
 }
 
+int ClearWorldObjects(int world)
+{
+	int deletedCount = 0;
+
+	for (int i = 0; i < MAX_OBJECTS; i++)
+	{
+		if (functions->CheckEntityExists(vcmpEntityPoolObject, i) > 0)
+		{
+			if (functions->GetObjectWorld(i) == world)
+			{
+				if (functions->DeleteObject(i) == 1)
+				{
+					deletedCount++;
+				}
+			}
+		}
+	}
+
+	return deletedCount;
+}
+
 void SetWastedSettings( int deathTime, int fadeTime, float fadeInSpeed, float fadeOutSpeed, cRGB colour, int corpseFadeDelay, int corpseFadeTime )
 {
 	unsigned int rDeathTime, rFadeTime, rCorpseFadeDelay, rCorpseFadeTime;
@@ -514,8 +535,191 @@ double GetHandlingRule( int model, int rule ) { return functions->GetHandlingRul
 void ResetHandlingRule( int model, int rule ) { functions->ResetHandlingRule( model, rule ); }
 void ResetVehicleHandling( int model ) { functions->ResetHandling( model ); }
 
+void SetVehicle3DArrowEnabled(Sqrat::Object vehicle, bool enable)
+{
+	int vehicleId = -1;
+
+	if (vehicle.GetType() == OT_INTEGER)
+	{
+		vehicleId = vehicle.Cast<int>();
+	}
+	else if (vehicle.GetType() == OT_INSTANCE)
+	{
+		CVehicle* pVehicle = vehicle.Cast<CVehicle*>();
+		if (pVehicle != nullptr)
+		{
+			vehicleId = pVehicle->GetID();
+		}
+	}
+
+	if (vehicleId < 0 || vehicleId >= MAX_VEHICLES || functions->CheckEntityExists(vcmpEntityPoolVehicle, vehicleId) <= 0)
+	{
+		throw Sqrat::Exception("SetVehicle3DArrowEnabled failed: Vehicle ID does not exist or is invalid.");
+	}
+
+	for (int i = 0; i < MAX_PLAYERS; i++)
+	{
+		if (functions->IsPlayerConnected(i))
+		{
+			functions->SetVehicle3DArrowForPlayer(vehicleId, i, enable);
+		}
+	}
+}
+
+bool GetVehicle3DArrowEnabled(Sqrat::Object vehicle)
+{
+	int vehicleId = -1;
+
+	if (vehicle.GetType() == OT_INTEGER)
+	{
+		vehicleId = vehicle.Cast<int>();
+	}
+	else if (vehicle.GetType() == OT_INSTANCE)
+	{
+		CVehicle* pVehicle = vehicle.Cast<CVehicle*>();
+		if (pVehicle != nullptr)
+		{
+			vehicleId = pVehicle->GetID();
+		}
+	}
+
+	if (vehicleId < 0 || vehicleId >= MAX_VEHICLES || functions->CheckEntityExists(vcmpEntityPoolVehicle, vehicleId) <= 0)
+	{
+		throw Sqrat::Exception("GetVehicle3DArrowEnabled failed: Vehicle ID does not exist or is invalid.");
+	}
+
+	for (int i = 0; i < MAX_PLAYERS; i++)
+	{
+		if (functions->IsPlayerConnected(i))
+		{
+			return functions->GetVehicle3DArrowForPlayer(vehicleId, i) == 1;
+		}
+	}
+	return false;
+}
+
+Sqrat::Table GetNearbyEntities(Sqrat::Object player, float radius)
+{
+	int playerId = -1;
+	HSQUIRRELVM v = player.GetVM();
+	Sqrat::Table result(v);
+
+	result.SetValue("Players", 0);
+	result.SetValue("Vehicles", 0);
+	result.SetValue("Objects", 0);
+	result.SetValue("Pickups", 0);
+	result.SetValue("Checkpoints", 0);
+
+	if (player.GetType() == OT_INTEGER)
+	{
+		playerId = player.Cast<int>();
+	}
+	else if (player.GetType() == OT_INSTANCE)
+	{
+		CPlayer* pPlayer = player.Cast<CPlayer*>();
+		if (pPlayer != nullptr)
+		{
+			playerId = pPlayer->GetID();
+		}
+	}
+
+	if (playerId < 0 || playerId >= MAX_PLAYERS || !functions->IsPlayerConnected(playerId))
+	{
+		throw Sqrat::Exception("GetNearbyEntities failed: Source player does not exist or is not connected.");
+	}
+
+	float sourceX = 0.0f, sourceY = 0.0f, sourceZ = 0.0f;
+	functions->GetPlayerPosition(playerId, &sourceX, &sourceY, &sourceZ);
+
+	int playersCount = 0;
+	int vehiclesCount = 0;
+	int objectsCount = 0;
+	int pickupsCount = 0;
+	int checkpointsCount = 0;
+
+	auto IsInRange = [&](float targetX, float targetY, float targetZ) -> bool {
+		float dx = targetX - sourceX;
+		float dy = targetY - sourceY;
+		float dz = targetZ - sourceZ;
+		return (dx * dx + dy * dy + dz * dz) <= (radius * radius);
+	};
+
+	for (int i = 0; i < MAX_PLAYERS; i++)
+	{
+		if (i != playerId && functions->IsPlayerConnected(i))
+		{
+			float x, y, z;
+			functions->GetPlayerPosition(i, &x, &y, &z);
+			if (IsInRange(x, y, z))
+			{
+				playersCount++;
+			}
+		}
+	}
+
+	for (int i = 0; i < MAX_VEHICLES; i++)
+	{
+		if (functions->CheckEntityExists(vcmpEntityPoolVehicle, i) > 0)
+		{
+			float x, y, z;
+			functions->GetVehiclePosition(i, &x, &y, &z);
+			if (IsInRange(x, y, z))
+			{
+				vehiclesCount++;
+			}
+		}
+	}
+
+	for (int i = 0; i < MAX_OBJECTS; i++)
+	{
+		if (functions->CheckEntityExists(vcmpEntityPoolObject, i) > 0)
+		{
+			float x, y, z;
+			functions->GetObjectPosition(i, &x, &y, &z);
+			if (IsInRange(x, y, z))
+			{
+				objectsCount++;
+			}
+		}
+	}
+
+	for (int i = 0; i < MAX_PICKUPS; i++)
+	{
+		if (functions->CheckEntityExists(vcmpEntityPoolPickup, i) > 0)
+		{
+			float x, y, z;
+			functions->GetPickupPosition(i, &x, &y, &z);
+			if (IsInRange(x, y, z))
+			{
+				pickupsCount++;
+			}
+		}
+	}
+
+	for (int i = 0; i < MAX_CHECKPOINTS; i++)
+	{
+		if (functions->CheckEntityExists(vcmpEntityPoolCheckPoint, i) > 0)
+		{
+			float x, y, z;
+			functions->GetCheckPointPosition(i, &x, &y, &z);
+			if (IsInRange(x, y, z))
+			{
+				checkpointsCount++;
+			}
+		}
+	}
+
+	result.SetValue("Players", playersCount);
+	result.SetValue("Vehicles", vehiclesCount);
+	result.SetValue("Objects", objectsCount);
+	result.SetValue("Pickups", pickupsCount);
+	result.SetValue("Checkpoints", checkpointsCount);
+
+	return result;
+}
+
 // All of these functions exist for compatibility
-bool GetCinematicBorder ( CPlayer * player )
+bool GetCinematicBorder(CPlayer * player)
 {
 	if( player != NULL )
 		return ( functions->GetPlayerOption( player->nPlayerId, vcmpPlayerOptionWidescreen ) != 0 );
@@ -523,7 +727,7 @@ bool GetCinematicBorder ( CPlayer * player )
 	return false;
 }
 
-bool GetGreenScanLines  ( CPlayer * player )
+bool GetGreenScanLines(CPlayer * player)
 {
 	if( player != NULL )
 		return ( functions->GetPlayerOption( player->nPlayerId, vcmpPlayerOptionGreenScanlines ) != 0 );
@@ -531,7 +735,7 @@ bool GetGreenScanLines  ( CPlayer * player )
 	return false;
 }
 
-bool GetWhiteScanLines  ( CPlayer * player )
+bool GetWhiteScanLines(CPlayer * player)
 {
 	if( player != NULL )
 		return ( functions->GetPlayerOption( player->nPlayerId, vcmpPlayerOptionWhiteScanlines ) != 0 );
@@ -539,38 +743,38 @@ bool GetWhiteScanLines  ( CPlayer * player )
 	return false;
 }
 
-void SetCinematicBorder ( CPlayer * player, bool toEnable )
+void SetCinematicBorder(CPlayer * player, bool toEnable)
 {
 	if( player != NULL )
 		functions->SetPlayerOption( player->nPlayerId, vcmpPlayerOptionWidescreen, toEnable );
 }
 
-void SetGreenScanLines  ( CPlayer * player, bool toEnable )
+void SetGreenScanLines(CPlayer * player, bool toEnable)
 {
 	if( player != NULL )
 		functions->SetPlayerOption( player->nPlayerId, vcmpPlayerOptionGreenScanlines, toEnable );
 }
 
-void SetWhiteScanLines  ( CPlayer * player, bool toEnable )
+void SetWhiteScanLines(CPlayer * player, bool toEnable)
 {
 	if( player != NULL )
 		functions->SetPlayerOption( player->nPlayerId, vcmpPlayerOptionWhiteScanlines, toEnable );
 }
 
-void KickPlayer         ( CPlayer * player )
+void KickPlayer(CPlayer * player)
 {
 	if( player != NULL )
 		functions->KickPlayer( player->nPlayerId );
 }
 
-void BanPlayer          ( CPlayer * player )
+void BanPlayer(CPlayer * player)
 {
 	if( player != NULL )
 		functions->BanPlayer( player->nPlayerId );
 }
 
-void Message            ( const SQChar * message ) { functions->SendClientMessage( -1, 0x0b5fa5ff, "%s", message ); }
-void MessagePlayer      ( const SQChar * message, CPlayer * player )
+void Message ( const SQChar * message ) { functions->SendClientMessage( -1, 0x0b5fa5ff, "%s", message ); }
+void MessagePlayer ( const SQChar * message, CPlayer * player )
 {
 	if( player != NULL )
 		functions->SendClientMessage( player->nPlayerId, 0x0b5fa5ff, "%s", message );
@@ -588,13 +792,13 @@ void MessageAllExcept   ( const SQChar * message, CPlayer * player )
 	}
 }
 
-void PrivMessage        ( CPlayer * player, const SQChar * message )
+void PrivMessage( CPlayer * player, const SQChar * message )
 {
 	if( player != NULL )
 		functions->SendClientMessage( player->nPlayerId, 0x007f16ff, "** pm >> %s", message );
 }
 
-void PrivMessageAll     ( const SQChar * message )
+void PrivMessageAll( const SQChar * message )
 {
 	for( int i = 0; i < MAX_PLAYERS; i++ )
 	{
@@ -603,10 +807,73 @@ void PrivMessageAll     ( const SQChar * message )
 	}
 }
 
-void SendPlayerMessage  ( CPlayer * playerToFake, CPlayer * playerTo, const SQChar * message )
+void SendPlayerMessage( CPlayer * playerToFake, CPlayer * playerTo, const SQChar * message )
 {
 	if( playerToFake != NULL && playerTo != NULL )
 		functions->SendClientMessage( playerTo->nPlayerId, 0x007f16ff, "** pm from %s >> %s", playerToFake->GetName().c_str(), message );
+}
+
+void SetPlayer3DArrowEnabled(Sqrat::Object player, bool enable)
+{
+	int playerId = -1;
+
+	if (player.GetType() == OT_INTEGER)
+	{
+		playerId = player.Cast<int>();
+	}
+	else if (player.GetType() == OT_INSTANCE)
+	{
+		CPlayer* pPlayer = player.Cast<CPlayer*>();
+		if (pPlayer != nullptr)
+		{
+			playerId = pPlayer->GetID();
+		}
+	}
+
+	if (playerId < 0 || playerId >= MAX_PLAYERS || !functions->IsPlayerConnected(playerId))
+	{
+		throw Sqrat::Exception("SetPlayer3DArrowEnabled failed: Player ID does not exist or is not connected.");
+	}
+
+	for (int i = 0; i < MAX_PLAYERS; i++)
+	{
+		if (functions->IsPlayerConnected(i) && i != playerId)
+		{
+			functions->SetPlayer3DArrowForPlayer(i, playerId, enable);
+		}
+	}
+}
+
+bool GetPlayer3DArrowEnabled(Sqrat::Object player)
+{
+	int playerId = -1;
+
+	if (player.GetType() == OT_INTEGER)
+	{
+		playerId = player.Cast<int>();
+	}
+	else if (player.GetType() == OT_INSTANCE)
+	{
+		CPlayer* pPlayer = player.Cast<CPlayer*>();
+		if (pPlayer != nullptr)
+		{
+			playerId = pPlayer->GetID();
+		}
+	}
+
+	if (playerId < 0 || playerId >= MAX_PLAYERS || !functions->IsPlayerConnected(playerId))
+	{
+		throw Sqrat::Exception("GetPlayer3DArrowEnabled failed: Player ID does not exist or is not connected.");
+	}
+
+	for (int i = 0; i < MAX_PLAYERS; i++)
+	{
+		if (functions->IsPlayerConnected(i) && i != playerId)
+		{
+			return functions->GetPlayer3DArrowForPlayer(i, playerId) == 1;
+		}
+	}
+	return false;
 }
 
 const SQChar* GetWeaponName(int weaponID)
@@ -1806,6 +2073,16 @@ int GetObjectCount()
 	return count;
 }
 
+int GetCheckpointCount()
+{
+	int count = 0;
+	for (int i = 0; i < MAX_CHECKPOINTS; i++)
+		if (functions->CheckEntityExists(vcmpEntityPoolCheckPoint, i) > 0)
+			count++;
+
+	return count;
+}
+
 int GetPlayers()
 {
 	int count = 0;
@@ -2148,6 +2425,86 @@ SQInteger NewTimer(HSQUIRRELVM v)
 	pCore->AddTimer(pTimer, timerHandle);
 
 	return 1;
+}
+
+std::string FormatDecimal(const SQChar* amountStr)
+{
+	if (!amountStr) return "0";
+
+	std::string s(amountStr);
+
+	bool isNegative = false;
+	if (s.length() > 0 && s[0] == '-') {
+		isNegative = true;
+		s = s.substr(1);
+	}
+
+	s.erase(std::remove_if(s.begin(), s.end(), [](char c) {
+		return !isdigit(c);
+	}), s.end());
+
+	if (s.empty()) return "0";
+
+	int len = (int)s.length();
+	if (len <= 3) {
+		return isNegative ? "-" + s : s;
+	}
+
+	std::string out = "";
+	int first = len % 3;
+
+	if (first > 0) {
+		out = s.substr(0, first);
+		for (int i = first; i < len; i += 3) {
+			out += "." + s.substr(i, 3);
+		}
+	}
+	else {
+		out = s.substr(0, 3);
+		for (int i = 3; i < len; i += 3) {
+			out += "." + s.substr(i, 3);
+		}
+	}
+
+	return isNegative ? "-" + out : out;
+}
+
+std::string ReplaceChars(const SQChar* original, Sqrat::Object target, const SQChar* newChar)
+{
+	std::string text = original;
+	std::string replacementChar = newChar;
+	std::vector<std::string> targets;
+
+	HSQUIRRELVM vm = target.GetVM();
+	sq_pushobject(vm, target.GetObject());
+
+	if (target.GetType() == OT_STRING) {
+		targets.push_back(target.Cast<const SQChar*>());
+	}
+	else if (target.GetType() == OT_TABLE || target.GetType() == OT_ARRAY) {
+		sq_pushnull(vm);
+		while (SQ_SUCCEEDED(sq_next(vm, -2))) {
+			const SQChar* val;
+			if (SQ_SUCCEEDED(sq_getstring(vm, -1, &val))) {
+				targets.push_back(val);
+			}
+			sq_pop(vm, 2);
+		}
+		sq_pop(vm, 1);
+	}
+	sq_pop(vm, 1);
+
+	for (const std::string& t : targets) {
+		if (t.empty()) continue;
+		size_t pos = 0;
+		while ((pos = text.find(t, pos)) != std::string::npos) {
+			std::string mask(t.length(), replacementChar[0]);
+			text.replace(pos, t.length(), mask);
+			pos += mask.length();
+		}
+	}
+
+	return text;
 }
 
 void SetVehiclesForcedRespawnHeight(SQFloat height) { functions->SetVehiclesForcedRespawnHeight(height); }
