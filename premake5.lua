@@ -4,20 +4,17 @@ workspace "SquirrelPlugin"
     -- Workspace
     ----------------------------------------------------------------------------
 
-    configurations
-    {
+    configurations {
         "Debug",
         "Release"
     }
 
-    platforms
-    {
+    platforms {
         "x86",
         "x64"
     }
 
     location "build"
-
     startproject "SquirrelPlugin"
 
     ----------------------------------------------------------------------------
@@ -42,7 +39,7 @@ workspace "SquirrelPlugin"
     ----------------------------------------------------------------------------
 
     filter { "system:windows", "configurations:Debug" }
-        characterset "Unicode"
+        characterset "MBCS"
 
     filter { "system:windows", "configurations:Release" }
         characterset "MBCS"
@@ -50,12 +47,10 @@ workspace "SquirrelPlugin"
     filter "configurations:Debug"
 
         runtime "Debug"
-
         symbols "On"
         optimize "Off"
 
-        defines
-        {
+        defines {
             "DEBUG",
             "_DEBUG",
             "_CRT_SECURE_NO_WARNINGS"
@@ -64,12 +59,10 @@ workspace "SquirrelPlugin"
     filter "configurations:Release"
 
         runtime "Release"
-
         symbols "Off"
         optimize "Full"
 
-        defines
-        {
+        defines {
             "NDEBUG",
             "_CRT_SECURE_NO_WARNINGS"
         }
@@ -85,18 +78,16 @@ project "squirrel"
     kind "StaticLib"
     language "C++"
     cppdialect "C++17"
-
+    warnings "Off"
     targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
     objdir    "build/obj/%{prj.name}/%{cfg.platform}/%{cfg.buildcfg}"
 
-    includedirs
-    {
+    includedirs {
         "squirrelsrc/include",
         "squirrelsrc/squirrel"
     }
 
-    files
-    {
+    files {
         "squirrelsrc/squirrel/**.h",
         "squirrelsrc/squirrel/**.cpp"
     }
@@ -110,18 +101,16 @@ project "sqstdlib"
     kind "StaticLib"
     language "C++"
     cppdialect "C++17"
-
+    warnings "Off"
     targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
     objdir    "build/obj/%{prj.name}/%{cfg.platform}/%{cfg.buildcfg}"
 
-    includedirs
-    {
+    includedirs {
         "squirrelsrc/include",
         "squirrelsrc/squirrel"
     }
 
-    files
-    {
+    files {
         "squirrelsrc/sqstdlib/**.h",
         "squirrelsrc/sqstdlib/**.cpp"
     }
@@ -135,29 +124,35 @@ project "SquirrelPlugin"
     kind "SharedLib"
     language "C++"
     cppdialect "C++17"
-
     targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
     objdir    "build/obj/%{prj.name}/%{cfg.platform}/%{cfg.buildcfg}"
 
-    includedirs
-    {
-        ".",
+    includedirs {
+        "."
+    }
+
+    externalincludedirs {
         "sqrat",
         "sqrat/sqrat",
         "squirrelsrc/include"
     }
 
-    files
-    {
+    files {
         "*.h",
         "*.cpp"
     }
 
-    links
-    {
+    links {
         "squirrel",
         "sqstdlib"
     }
+
+    ----------------------------------------------------------------------------
+    -- Ignore warnings from external headers (Visual Studio)
+    ----------------------------------------------------------------------------
+
+    filter "action:vs*"
+        externalwarnings "Off"
 
     ----------------------------------------------------------------------------
     -- Output File Name
@@ -181,8 +176,7 @@ project "SquirrelPlugin"
 
     filter "system:windows"
 
-        links
-        {
+        links {
             "ws2_32"
         }
 
@@ -194,8 +188,7 @@ project "SquirrelPlugin"
 
         targetprefix ""
 
-        links
-        {
+        links {
             "pthread",
             "dl",
             "m"

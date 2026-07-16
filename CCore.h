@@ -56,7 +56,7 @@ class CCore
 		void LoadScript();
 		bool ParseConfigLine( char * lineBuffer );
 
-		void printf( char* pszFormat, ... );
+		void printf(const char* pszFormat, ...);
 		void rawprint(const char * pszOutput);
 
 	public:

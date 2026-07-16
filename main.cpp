@@ -8,10 +8,10 @@
 #endif
 
 #ifdef _WIN32
-#include <Windows.h>
+    #include <Windows.h>
 #endif
 
-// Standard Library
+ // Standard Library
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -32,11 +32,11 @@
 
 // --- Global Variables ---
 SquirrelExports* pExp;
-PluginFuncs*    functions;
-PluginInfo*     information;
+PluginFuncs* functions;
+PluginInfo* information;
 PluginCallbacks* callbacks;
-CCore*          pCore;
-HSQAPI          sq;
+CCore* pCore;
+HSQAPI sq;
 
 extern HSQUIRRELVM v;
 
@@ -45,8 +45,7 @@ extern HSQUIRRELVM v;
 /**
  * @brief Calculates the length of a formatted string before allocation.
  */
-inline int vscprintf(const char* format, va_list args)
-{
+inline int vscprintf(const char* format, va_list args) {
     va_list copy;
     va_copy(copy, args);
     int len = vsnprintf(nullptr, 0, format, copy);
@@ -57,12 +56,11 @@ inline int vscprintf(const char* format, va_list args)
 /**
  * @brief Converts a wide character string to an ANSI string.
  */
-std::string WideToAnsi(const wchar_t* wstr)
-{
+std::string WideToAnsi(const wchar_t* wstr) {
     if (!wstr) return {};
 
     size_t len = std::wcstombs(nullptr, wstr, 0);
-    if (len == static_cast<size_t>(-1)) return {};
+    if (len == static_cast <size_t> (-1)) return {};
 
     std::string str(len, '\0');
     std::wcstombs(str.data(), wstr, len + 1);
@@ -72,27 +70,28 @@ std::string WideToAnsi(const wchar_t* wstr)
 /**
  * @brief Outputs formatted script information to the console/server log.
  */
-void printfunc(HSQUIRRELVM v, const SQChar* s, ...)
-{
+void printfunc(HSQUIRRELVM v,
+    const SQChar* s, ...) {
     va_list arglist;
     char szInitBuffer[1024];
 
     va_start(arglist, s);
     int nChars = vsnprintf(szInitBuffer, sizeof(szInitBuffer), s, arglist);
 
-    if (nChars < 0 || nChars >= (int)sizeof(szInitBuffer))
-    {
+    if (nChars < 0 || nChars >= (int)sizeof(szInitBuffer)) {
         if (nChars < 0) nChars = vscprintf(s, arglist);
 
         char* szBuffer = (char*)calloc(nChars + 1, sizeof(char));
         if (szBuffer == NULL) {
             pCore->rawprint("Error: failed to malloc buffer for printfunc.");
-        } else {
+        }
+        else {
             vsnprintf(szBuffer, nChars + 1, s, arglist);
             OutputScriptInfo(szBuffer);
             free(szBuffer);
         }
-    } else {
+    }
+    else {
         OutputScriptInfo(szInitBuffer);
     }
     va_end(arglist);
@@ -101,27 +100,28 @@ void printfunc(HSQUIRRELVM v, const SQChar* s, ...)
 /**
  * @brief Outputs formatted error messages to the console/server log.
  */
-void errorfunc(HSQUIRRELVM v, const SQChar* s, ...)
-{
+void errorfunc(HSQUIRRELVM v,
+    const SQChar* s, ...) {
     va_list arglist;
     char szInitBuffer[1024];
 
     va_start(arglist, s);
     int nChars = vsnprintf(szInitBuffer, sizeof(szInitBuffer), s, arglist);
 
-    if (nChars < 0 || nChars >= (int)sizeof(szInitBuffer))
-    {
+    if (nChars < 0 || nChars >= (int)sizeof(szInitBuffer)) {
         if (nChars < 0) nChars = vscprintf(s, arglist);
 
         char* szBuffer = (char*)calloc(nChars + 1, sizeof(char));
         if (szBuffer == NULL) {
             pCore->rawprint("Error: failed to malloc buffer for errorfunc.");
-        } else {
+        }
+        else {
             vsnprintf(szBuffer, nChars + 1, s, arglist);
             pCore->rawprint(szBuffer);
             free(szBuffer);
         }
-    } else {
+    }
+    else {
         pCore->rawprint(szInitBuffer);
     }
     va_end(arglist);
@@ -129,16 +129,16 @@ void errorfunc(HSQUIRRELVM v, const SQChar* s, ...)
 
 // --- Plugin Export Interface ---
 
-extern "C" EXPORT unsigned int Supports()
-{
+extern "C"
+EXPORT unsigned int Supports() {
     return 0x00000FF0;
 }
 
 /**
  * @brief Initializes the plugin, registers callbacks, and sets up the Squirrel export table.
  */
-extern "C" EXPORT unsigned int VcmpPluginInit(PluginFuncs* givenPluginFuncs, PluginCallbacks* givenPluginCalls, PluginInfo* givenPluginInfo)
-{
+extern "C"
+EXPORT unsigned int VcmpPluginInit(PluginFuncs* givenPluginFuncs, PluginCallbacks* givenPluginCalls, PluginInfo* givenPluginInfo) {
     functions = givenPluginFuncs;
     callbacks = givenPluginCalls;
     information = givenPluginInfo;
@@ -210,9 +210,9 @@ extern "C" EXPORT unsigned int VcmpPluginInit(PluginFuncs* givenPluginFuncs, Plu
     callbacks->OnCheckpointExited = OnCheckpointExited;
     callbacks->OnPlayerModuleList = OnPlayerModuleList;
 
-    #ifdef _WIN32
-        system("chcp 65001 > nul");
-    #endif
+#ifdef _WIN32
+    system("chcp 65001 > nul");
+#endif
 
     return 1;
 }
